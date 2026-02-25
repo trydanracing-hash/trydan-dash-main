@@ -268,17 +268,6 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
-# ========== RUN SERVER ==========
-
-if __name__ == '__main__':
-    print("\n" + "="*60)
-    print("🏎️  PROFESSIONAL RACING TELEMETRY SYSTEM")
-    print("="*60)
-    print("✓ ML Engine: GPS + Speed Analysis")
-    print("✓ Features: Optimal Lap, Race Strategy, Tire Prediction")
-    print("✓ API Server: http://localhost:5000")
-    print("="*60 + "\n")
-    mqtt_client = start_mqtt()
     
 # ========== RUN SERVER ==========
 
