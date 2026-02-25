@@ -280,10 +280,12 @@ if __name__ == '__main__':
     print("="*60 + "\n")
     mqtt_client = start_mqtt()
     
-    if __name__ == '__main__':
+# ========== RUN SERVER ==========
+
+if __name__ == "__main__":
     print("Starting Racing Telemetry API...")
 
     mqtt_client = start_mqtt()
 
     port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port)
