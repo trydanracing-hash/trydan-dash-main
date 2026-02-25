@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Racing Telemetry | F1 Grade System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+    <!-- Header Bar -->
+    <div class="header-bar">
+        <div class="logo-section">
+            <div class="logo-icon">🏎️</div>
+            <div class="logo-text">
+                <div class="team-name">RACING TELEMETRY</div>
+                <div class="system-subtitle">Trydan Motorsports</div>
+            </div>
+        </div>
+        
+        <div class="session-info">
+            <div class="info-item">
+                <span class="info-label">SESSION</span>
+                <span class="info-value" id="session-time">00:00:00</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">LAPS</span>
+                <span class="info-value" id="lap-counter">0 / 20</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">BEST LAP</span>
+                <span class="info-value" id="best-lap-time">--:--.---</span>
+            </div>
+        </div>
+        
+        <div class="connection-status">
+            <div class="status-indicator" id="connection-indicator">
+                <div class="status-dot"></div>
+                <span id="connection-text">CONNECTING...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+        
+        <!-- Column 1: Map & Strategy -->
+        <div class="dashboard-column column-1">
+            
+            <!-- Live Map -->
+            <div class="panel map-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">LIVE TRACK MAP</h3>
+                    <div class="panel-controls">
+                        <button class="control-btn" id="toggle-racing-line">Racing Line</button>
+                        <button class="control-btn" id="toggle-overtaking">Overtaking Zones</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div id="map"></div>
+                    <div class="map-overlay">
+                        <div class="current-sector" id="current-sector-display">S1</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Race Strategy Panel -->
+            <div class="panel strategy-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">AI RACE STRATEGY</h3>
+                    <div class="strategy-mode" id="strategy-mode">SETTLE IN</div>
+                </div>
+                <div class="panel-content" id="strategy-content">
+                    <div class="strategy-empty">
+                        <div class="empty-icon">🤖</div>
+                        <p>Complete first lap for AI strategy analysis</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Column 2: Core Metrics -->
+        <div class="dashboard-column column-2">
+            
+            <!-- Live Speed Chart -->
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">SPEED (KM/H)</h3>
+                    <div class="current-speed" id="current-speed-display">0</div>
+                </div>
+                <div class="panel-content">
+                    <canvas id="speedChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Delta Time Display -->
+            <div class="panel delta-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">DELTA TIME</h3>
+                    <div class="delta-reference">vs Optimal Lap</div>
+                </div>
+                <div class="panel-content delta-content">
+                    <div class="delta-value" id="delta-value">+0.000</div>
+                    <div class="delta-bar-container">
+                        <div class="delta-bar" id="delta-bar"></div>
+                    </div>
+                    <div class="delta-info">
+                        <span class="delta-ahead">AHEAD</span>
+                        <span class="delta-behind">BEHIND</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lap Time Prediction -->
+            <div class="panel prediction-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">LAP PREDICTION</h3>
+                    <div class="prediction-confidence" id="prediction-confidence">-- %</div>
+                </div>
+                <div class="panel-content prediction-content">
+                    <div class="predicted-time" id="predicted-time">--:--.---</div>
+                    <div class="prediction-comparison" id="prediction-comparison">
+                        <span class="vs-optimal">vs Optimal: <span id="vs-optimal-delta">-</span></span>
+                        <span class="vs-best">vs Best: <span id="vs-best-delta">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Column 3: Performance & Analysis -->
+        <div class="dashboard-column column-3">
+            
+            <!-- Driver Performance Score -->
+            <div class="panel performance-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">DRIVER PERFORMANCE</h3>
+                    <div class="performance-rating" id="performance-rating">-</div>
+                </div>
+                <div class="panel-content performance-content">
+                    <div class="performance-score-circle">
+                        <svg viewBox="0 0 100 100" class="score-svg">
+                            <circle cx="50" cy="50" r="45" class="score-bg"></circle>
+                            <circle cx="50" cy="50" r="45" class="score-fill" id="score-circle"></circle>
+                        </svg>
+                        <div class="score-value" id="performance-score">75</div>
+                    </div>
+                    <div class="performance-breakdown">
+                        <div class="perf-stat">
+                            <span class="stat-label">Speed</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" id="speed-stat"></div>
+                            </div>
+                        </div>
+                        <div class="perf-stat">
+                            <span class="stat-label">Consistency</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" id="consistency-stat"></div>
+                            </div>
+                        </div>
+                        <div class="perf-stat">
+                            <span class="stat-label">Smoothness</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" id="smoothness-stat"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tire Status -->
+            <div class="panel tire-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">TIRE STATUS</h3>
+                    <div class="tire-status-badge" id="tire-status-badge">GOOD</div>
+                </div>
+                <div class="panel-content tire-content">
+                    <div class="tire-grip-display">
+                        <div class="grip-percentage" id="grip-percentage">100%</div>
+                        <div class="grip-label">GRIP LEVEL</div>
+                    </div>
+                    <div class="tire-info-grid">
+                        <div class="tire-info-item">
+                            <span class="tire-info-label">Degradation</span>
+                            <span class="tire-info-value" id="tire-degradation">0.0%/lap</span>
+                        </div>
+                        <div class="tire-info-item">
+                            <span class="tire-info-label">Laps Remaining</span>
+                            <span class="tire-info-value" id="tire-laps-remaining">--</span>
+                        </div>
+                        <div class="tire-info-item">
+                            <span class="tire-info-label">Pace Loss</span>
+                            <span class="tire-info-value" id="tire-pace-loss">0.0%</span>
+                        </div>
+                        <div class="tire-info-item pit-recommendation" id="pit-recommendation" style="display: none;">
+                            <span class="pit-icon">🔴</span>
+                            <span class="pit-text">PIT STOP RECOMMENDED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sector Times -->
+            <div class="panel sectors-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">SECTOR ANALYSIS</h3>
+                </div>
+                <div class="panel-content sectors-content" id="sectors-content">
+                    <div class="sector-item">
+                        <span class="sector-label">S1</span>
+                        <span class="sector-time">--.-</span>
+                        <span class="sector-badge">-</span>
+                    </div>
+                    <div class="sector-item">
+                        <span class="sector-label">S2</span>
+                        <span class="sector-time">--.-</span>
+                        <span class="sector-badge">-</span>
+                    </div>
+                    <div class="sector-item">
+                        <span class="sector-label">S3</span>
+                        <span class="sector-time">--.-</span>
+                        <span class="sector-badge">-</span>
+                    </div>
+                    <div class="sector-divider"></div>
+                    <div class="sector-item optimal">
+                        <span class="sector-label">OPTIMAL</span>
+                        <span class="sector-time" id="optimal-lap-time">--.-</span>
+                        <span class="sector-badge">THEORETICAL</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Column 4: Coaching & Improvement -->
+        <div class="dashboard-column column-4">
+            
+            <!-- Corner Analysis -->
+            <div class="panel corner-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">CORNER ANALYSIS</h3>
+                    <div class="corner-count" id="corner-count">0 corners</div>
+                </div>
+                <div class="panel-content corner-content" id="corner-content">
+                    <div class="corner-empty">
+                        <div class="empty-icon">🏁</div>
+                        <p>Complete a lap to analyze corners</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Improvement Zones -->
+            <div class="panel improvement-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">TIME LOSS ANALYSIS</h3>
+                </div>
+                <div class="panel-content improvement-content" id="improvement-content">
+                    <div class="improvement-empty">
+                        <div class="empty-icon">📊</div>
+                        <p>Analyzing sectors for improvement opportunities</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lap History -->
+            <div class="panel history-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">LAP HISTORY</h3>
+                </div>
+                <div class="panel-content history-content" id="history-content">
+                    <div class="history-empty">
+                        <p>No laps completed yet</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Lap Completed Notification -->
+    <div class="lap-notification" id="lap-notification">
+        <div class="notif-header">
+            <span class="notif-icon">🏁</span>
+            <span class="notif-title">LAP COMPLETE</span>
+        </div>
+        <div class="notif-body">
+            <div class="notif-lap-number">LAP <span id="notif-lap-num">1</span></div>
+            <div class="notif-lap-time" id="notif-lap-time">1:45.234</div>
+            <div class="notif-delta" id="notif-delta">+0.234 vs Optimal</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
