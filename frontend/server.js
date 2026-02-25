@@ -2,7 +2,9 @@
 const express = require('express');
 const path = require('path');
 const app = express();
-const PORT = 3000;
+
+// 🔥 Use Render's dynamic port
+const PORT = process.env.PORT || 3000;
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -13,6 +15,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✓ Dashboard is live at http://localhost:${PORT}`);
-    console.log(`✓ Make sure Python backend is running on port 5000`);
+    console.log(`✓ Dashboard is live on port ${PORT}`);
 });
