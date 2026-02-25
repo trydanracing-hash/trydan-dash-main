@@ -2,3 +2,5 @@ flask==3.0.0
 flask-cors==4.0.0
 numpy==1.24.3
 scipy==1.11.3
+paho-mqtt==1.6.1
+gunicorn==21.2.0
